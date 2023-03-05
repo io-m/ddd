@@ -17,7 +17,7 @@ func TestCustomer_NewCustomer(t *testing.T) {
 		expectedError error
 	}
 
-	tsetsCases := []testCase{
+	testCases := []testCase{
 		{
 			test:          "Empty name validation",
 			name:          "",
@@ -30,7 +30,7 @@ func TestCustomer_NewCustomer(t *testing.T) {
 		},
 	}
 
-	for _, tc := range tsetsCases {
+	for _, tc := range testCases {
 		testFunc := func(t *testing.T) {
 			_, err := aggregate.NewCustomer(tc.name)
 			// Check if the error matches the expected error

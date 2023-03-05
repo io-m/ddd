@@ -1,7 +1,10 @@
 package order
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/io-m/ddd/aggregate"
@@ -79,20 +82,29 @@ func WithInitProductMemoRepo(products []aggregate.Product) OrderConfiguration {
 	return WithIProductRepo(pr)
 }
 
+/* Setting kinda custom logger
+ * output will look something like:
+	LOGGER :: {
+		"level": "INFO ",
+		"msg": "Customer c34c1d6d-0263-4641-a505-de41f9b92ea5 ordered 1 products",
+		"time": "2023-03-05 15:53:24.705896 +0100 CET m=+0.001130621"
+	}
+*/ 
 func WithStandardLogger() OrderConfiguration {
 	sl := log.Default()
+	sl.SetPrefix("LOGGER :: ")
+	sl.SetFlags(0)
 	return WithAnyLogger(sl)
 }
 
 /* Set of methods on OrderService */
 
-func (os *OrderService) CreateOrder(customerId uuid.UUID, productIds []uuid.UUID) error {
+func (os *OrderService) CreateOrder(customerId uuid.UUID, productIds []uuid.UUID) (float64, error) {
 	// Fetch the customer through the customer repo
 	c, err := os.customerRepo.GetOne(customerId)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	os.logger.Print(c)
 	// Get each product
 	var products []aggregate.Product
 	var total float64
@@ -100,12 +112,29 @@ func (os *OrderService) CreateOrder(customerId uuid.UUID, productIds []uuid.UUID
 	for _, id := range productIds {
 		p, err := os.productRepo.GetOne(id)
 		if err != nil {
-			return err
+			return 0, err
 		}
 
 		products = append(products, p)
 		total += p.GetProductPrice()
 	}
-	os.logger.Printf("Customer %s ordered %d products", c.GetCustomerId(), len(products))
-	return nil
+	
+	l, err := logOut("INFO ", fmt.Sprintf("Customer %s ordered %d products", c.GetCustomerId(), len(products)))
+	if err != nil {
+		return 0, err
+	}
+	os.logger.Printf(l)
+	return total, nil
+}
+
+func logOut(level, message string) (string, error){
+	logStructure := make(map[string]string)
+	logStructure["level"] = level
+	logStructure["time"] = time.Now().String()
+	logStructure["msg"] = message
+	b, err := json.MarshalIndent(logStructure, "", " ")
+	if err != nil {
+		return "Could not return json format", err
+	}
+	return string(b), nil
 }
