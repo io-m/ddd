@@ -1,9 +1,10 @@
-package service
+package order
 
 import (
 	"log"
 
 	"github.com/google/uuid"
+	"github.com/io-m/ddd/aggregate"
 	"github.com/io-m/ddd/domain/customer"
 	"github.com/io-m/ddd/domain/customer/memo"
 	"github.com/io-m/ddd/domain/product"
@@ -66,8 +67,15 @@ func WithCustomerMemoRepo() OrderConfiguration {
 	return WithICustomerRepo(mr)
 }
 
-func WithProductMemoRepo() OrderConfiguration {
+// Configuration for initializing products in our in-memory DB
+// When we instantiate OrderService in test file we can just call NewOrderService(WithCustomerMemoRepo(), WithInitProductMemoRepo())
+func WithInitProductMemoRepo(products []aggregate.Product) OrderConfiguration {
 	pr := pm.New()
+	for _ , p := range products {
+		if err := pr.Add(p); err != nil {
+			return nil
+		}
+	}
 	return WithIProductRepo(pr)
 }
 
@@ -78,7 +86,6 @@ func WithStandardLogger() OrderConfiguration {
 
 /* Set of methods on OrderService */
 
-// TODO: continue here
 func (os *OrderService) CreateOrder(customerId uuid.UUID, productIds []uuid.UUID) error {
 	// Fetch the customer through the customer repo
 	c, err := os.customerRepo.GetOne(customerId)
@@ -87,7 +94,18 @@ func (os *OrderService) CreateOrder(customerId uuid.UUID, productIds []uuid.UUID
 	}
 	os.logger.Print(c)
 	// Get each product
-	p, _ := os.productRepo.GetOne(uuid.New())
-	os.logger.Print(p)
+	var products []aggregate.Product
+	var total float64
+
+	for _, id := range productIds {
+		p, err := os.productRepo.GetOne(id)
+		if err != nil {
+			return err
+		}
+
+		products = append(products, p)
+		total += p.GetProductPrice()
+	}
+	os.logger.Printf("Customer %s ordered %d products", c.GetCustomerId(), len(products))
 	return nil
 }
