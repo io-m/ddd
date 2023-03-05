@@ -18,7 +18,7 @@ func init_products(t *testing.T) []aggregate.Product {
 func TestOrder_NewOrder(t *testing.T) {
 	// Create new list of products and insert them into in-memory store WithInitProductMemoRepo(products)
 	products := init_products(t)
-	os, err := NewOrderService(WithCustomerMemoRepo(), WithInitProductMemoRepo(products), WithStandardLogger())
+	os, err := NewOrderService(WithCustomerMemoRepo(), WithInitProductMemoRepo(products), WithStandardLogger("Order service"))
 	if err != nil {
 		t.Error(err)
 	}

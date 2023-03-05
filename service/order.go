@@ -90,9 +90,9 @@ func WithInitProductMemoRepo(products []aggregate.Product) OrderConfiguration {
 		"time": "2023-03-05 15:53:24.705896 +0100 CET m=+0.001130621"
 	}
 */ 
-func WithStandardLogger() OrderConfiguration {
+func WithStandardLogger(serviceName string) OrderConfiguration {
 	sl := log.Default()
-	sl.SetPrefix("LOGGER :: ")
+	sl.SetPrefix(fmt.Sprintf("%s :: ", serviceName))
 	sl.SetFlags(0)
 	return WithAnyLogger(sl)
 }
